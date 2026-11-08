@@ -14,7 +14,7 @@ from homeassistant.components.media_player import (
     MediaType,
 )
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ServiceValidationError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
@@ -76,8 +76,11 @@ class LibreSyncMediaPlayer(LibreSyncEntity, MediaPlayerEntity):
 
     There is no turn on or off: the hub's power command is a stop that ends
     the session, and when playback starts on a hub that is off, power on is
-    reported last, as a consequence rather than a cause. Mute is not offered
-    because the device has no writable mute.
+    reported last, as a consequence rather than a cause.
+
+    Mute is simulated with the volume: the hub has no mute that can be written.
+    Muting saves the volume and sets it to zero, unmuting restores it. The saved
+    volume is not kept across a restart.
     """
 
     _attr_name = None
@@ -87,6 +90,7 @@ class LibreSyncMediaPlayer(LibreSyncEntity, MediaPlayerEntity):
     _attr_supported_features = (
         MediaPlayerEntityFeature.VOLUME_SET
         | MediaPlayerEntityFeature.VOLUME_STEP
+        | MediaPlayerEntityFeature.VOLUME_MUTE
         | MediaPlayerEntityFeature.SELECT_SOURCE
         | MediaPlayerEntityFeature.PLAY
         | MediaPlayerEntityFeature.PAUSE
@@ -99,6 +103,8 @@ class LibreSyncMediaPlayer(LibreSyncEntity, MediaPlayerEntity):
         """Initialize the media player."""
         super().__init__(client, unique_id, name)
         self._attr_unique_id = unique_id
+        # The volume to restore on unmute, None while not muted by us.
+        self._muted_volume: int | None = None
         self._written = client.state
         self._received_position_ms = client.state.position_ms
         self._take_position(client.state)
@@ -111,6 +117,10 @@ class LibreSyncMediaPlayer(LibreSyncEntity, MediaPlayerEntity):
         self._received_position_ms = state.position_ms
         if self._position_on_course(state):
             return
+        # The volume moved away from zero while muted by us: someone else set
+        # it, and restoring the saved volume later would undo their choice.
+        if self._muted_volume is not None and state.volume not in (0, None):
+            self._muted_volume = None
         # A write for another reason keeps the time the position was read,
         # unless the position changed since the last push, or playback started
         # or stopped: the frontend extrapolates from that time only while
@@ -201,7 +211,9 @@ class LibreSyncMediaPlayer(LibreSyncEntity, MediaPlayerEntity):
     @property
     @override
     def is_volume_muted(self) -> bool | None:
-        """Return whether the hub is muted by its remote or the vendor's app."""
+        """Return whether the hub is muted, by us or by its remote or app."""
+        if self._muted_volume is not None:
+            return True
         return self.snapshot.muted
 
     @property
@@ -260,6 +272,24 @@ class LibreSyncMediaPlayer(LibreSyncEntity, MediaPlayerEntity):
     async def async_set_volume_level(self, volume: float) -> None:
         """Set the volume."""
         await self._client.async_set_volume(round(volume * 100))
+
+    @handle_errors
+    @override
+    async def async_mute_volume(self, mute: bool) -> None:
+        """Mute by setting the volume to zero, or restore the saved volume."""
+        if mute:
+            if self._muted_volume is None:
+                self._muted_volume = self.snapshot.volume
+            await self._client.async_set_volume(0)
+            return
+        restore, self._muted_volume = self._muted_volume, None
+        if restore is not None:
+            await self._client.async_set_volume(restore)
+        elif self.snapshot.muted:
+            # Muted by the remote or the vendor's app: no command clears it.
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="muted_by_device"
+            )
 
     @handle_errors
     @override

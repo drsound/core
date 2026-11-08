@@ -85,6 +85,9 @@
     "invalid_source": {
       "message": "The hub has no source named {source}."
     },
+    "muted_by_device": {
+      "message": "The hub is muted by its remote or the vendor's app, and cannot be unmuted from Home Assistant."
+    },
     "not_confirmed": {
       "message": "The hub did not confirm the command in time, so it may not have taken effect."
     },

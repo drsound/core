@@ -26,6 +26,7 @@ from homeassistant.components.media_player import (
     ATTR_MEDIA_POSITION_UPDATED_AT,
     ATTR_MEDIA_TITLE,
     ATTR_MEDIA_VOLUME_LEVEL,
+    ATTR_MEDIA_VOLUME_MUTED,
     DOMAIN as MEDIA_PLAYER_DOMAIN,
     SERVICE_MEDIA_NEXT_TRACK,
     SERVICE_MEDIA_PAUSE,
@@ -33,6 +34,7 @@ from homeassistant.components.media_player import (
     SERVICE_MEDIA_PREVIOUS_TRACK,
     SERVICE_MEDIA_STOP,
     SERVICE_SELECT_SOURCE,
+    SERVICE_VOLUME_MUTE,
     SERVICE_VOLUME_SET,
     MediaPlayerState,
 )
@@ -348,3 +350,75 @@ async def test_position_time_restamped_on_resume(
     assert attributes[ATTR_MEDIA_POSITION_UPDATED_AT] - paused_at >= timedelta(
         minutes=5
     )
+
+
+async def test_mute_simulated(hass: HomeAssistant, mock_client: MagicMock) -> None:
+    """Test mute sets the volume to zero and unmute restores it."""
+    await hass.services.async_call(
+        MEDIA_PLAYER_DOMAIN,
+        SERVICE_VOLUME_MUTE,
+        {ATTR_ENTITY_ID: ENTITY_ID, ATTR_MEDIA_VOLUME_MUTED: True},
+        blocking=True,
+    )
+    mock_client.async_set_volume.assert_awaited_once_with(0)
+    push(mock_client, STATE.evolve(volume=0))
+    await hass.async_block_till_done()
+    assert hass.states.get(ENTITY_ID).attributes[ATTR_MEDIA_VOLUME_MUTED] is True
+
+    # Muting again keeps the volume saved the first time.
+    await hass.services.async_call(
+        MEDIA_PLAYER_DOMAIN,
+        SERVICE_VOLUME_MUTE,
+        {ATTR_ENTITY_ID: ENTITY_ID, ATTR_MEDIA_VOLUME_MUTED: True},
+        blocking=True,
+    )
+    mock_client.async_set_volume.reset_mock()
+    await hass.services.async_call(
+        MEDIA_PLAYER_DOMAIN,
+        SERVICE_VOLUME_MUTE,
+        {ATTR_ENTITY_ID: ENTITY_ID, ATTR_MEDIA_VOLUME_MUTED: False},
+        blocking=True,
+    )
+    mock_client.async_set_volume.assert_awaited_once_with(STATE.volume)
+
+
+async def test_mute_cancelled_by_volume_change(
+    hass: HomeAssistant, mock_client: MagicMock
+) -> None:
+    """Test a volume set elsewhere while muted is not overwritten on unmute."""
+    await hass.services.async_call(
+        MEDIA_PLAYER_DOMAIN,
+        SERVICE_VOLUME_MUTE,
+        {ATTR_ENTITY_ID: ENTITY_ID, ATTR_MEDIA_VOLUME_MUTED: True},
+        blocking=True,
+    )
+    push(mock_client, STATE.evolve(volume=0))
+    push(mock_client, STATE.evolve(volume=15))
+    await hass.async_block_till_done()
+    assert hass.states.get(ENTITY_ID).attributes[ATTR_MEDIA_VOLUME_MUTED] is False
+
+    mock_client.async_set_volume.reset_mock()
+    await hass.services.async_call(
+        MEDIA_PLAYER_DOMAIN,
+        SERVICE_VOLUME_MUTE,
+        {ATTR_ENTITY_ID: ENTITY_ID, ATTR_MEDIA_VOLUME_MUTED: False},
+        blocking=True,
+    )
+    mock_client.async_set_volume.assert_not_awaited()
+
+
+async def test_unmute_when_muted_by_device(
+    hass: HomeAssistant, mock_client: MagicMock
+) -> None:
+    """Test unmuting a hub muted by its remote is reported."""
+    push(mock_client, STATE.evolve(muted=True))
+    await hass.async_block_till_done()
+    with pytest.raises(HomeAssistantError) as err:
+        await hass.services.async_call(
+            MEDIA_PLAYER_DOMAIN,
+            SERVICE_VOLUME_MUTE,
+            {ATTR_ENTITY_ID: ENTITY_ID, ATTR_MEDIA_VOLUME_MUTED: False},
+            blocking=True,
+        )
+    assert err.value.translation_key == "muted_by_device"
+    mock_client.async_set_volume.assert_not_awaited()
