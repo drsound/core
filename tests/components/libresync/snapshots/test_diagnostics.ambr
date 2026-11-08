@@ -1,0 +1,41 @@
+# serializer version: 1
+# name: test_diagnostics
+  dict({
+    'client': dict({
+      'connected': dict({
+        'control': True,
+        'media': True,
+      }),
+      'counters': dict({
+        'control_unknown': 0,
+        'media_unknown': 1,
+      }),
+      'host': '<redacted>',
+      'state': dict({
+        'available': True,
+        'now_playing': dict({
+          'app': 'TIDAL',
+          'title': '<redacted>',
+        }),
+        'power': True,
+        'serial': '<redacted>',
+        'volume': 28,
+      }),
+      'unknown_frames': '**REDACTED**',
+      'unknown_signatures': dict({
+        'control': dict({
+        }),
+        'media': dict({
+          'aa55': 1,
+        }),
+      }),
+    }),
+    'entry': dict({
+      'data': dict({
+        'host': '**REDACTED**',
+      }),
+      'title': 'Stereo',
+      'unique_id': 'uuid:1a2b3c4d-5e6f-11f0-9193-0123456789ab',
+    }),
+  })
+# ---
