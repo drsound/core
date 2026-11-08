@@ -1,6 +1,7 @@
 """The LibreSync integration."""
 
 from collections.abc import Callable
+import logging
 
 from aiolibresync import DeviceState, LibreSyncClient, NotConnectedError
 
@@ -11,6 +12,8 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
 
 from .const import CONNECT_TIMEOUT, DOMAIN, MANUFACTURER
+
+_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.MEDIA_PLAYER]
 
@@ -47,6 +50,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: LibreSyncConfigEntry) ->
     update_device = _device_updater(hass, device.id)
     entry.async_on_unload(client.subscribe(update_device))
     update_device(client.state)
+    log_availability = _availability_logger(
+        entry.data[CONF_HOST], client.state.available
+    )
+    entry.async_on_unload(client.subscribe(log_availability))
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -66,6 +73,27 @@ def _device_updater(
         dr.async_get(hass).async_update_device(device_id, model=state.model)
 
     return update
+
+
+def _availability_logger(host: str, available: bool) -> Callable[[DeviceState], None]:
+    """Log once when the hub becomes unavailable and once when it is back.
+
+    Once per entry rather than per entity. The library reconnects on its own
+    and logs only at debug level.
+    """
+
+    @callback
+    def log(state: DeviceState) -> None:
+        nonlocal available
+        if state.available == available:
+            return
+        available = state.available
+        if available:
+            _LOGGER.info("The hub at %s is back online", host)
+        else:
+            _LOGGER.info("The hub at %s is unavailable", host)
+
+    return log
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: LibreSyncConfigEntry) -> None:

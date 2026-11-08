@@ -1,8 +1,10 @@
 """Tests for the LibreSync integration setup."""
 
+import logging
 from unittest.mock import MagicMock
 
 from aiolibresync import NotConnectedError
+import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
 from homeassistant.components.libresync.const import CONNECT_TIMEOUT
@@ -81,3 +83,31 @@ async def test_device_keeps_identity_across_reload(
         device_registry, mock_config_entry.entry_id
     )
     assert device.model == "Stereo Hub"
+
+
+async def test_outage_logged_once(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_client: MagicMock,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test an outage is logged once when it starts and once when it ends."""
+    await setup_integration(hass, mock_config_entry)
+    caplog.set_level(logging.INFO, logger="homeassistant.components.libresync")
+    caplog.clear()
+
+    down = STATE.evolve(available=False)
+    for state in (down, down.evolve(volume=10), down, STATE, STATE.evolve(volume=10)):
+        push(mock_client, state)
+    await hass.async_block_till_done()
+
+    records = [
+        record
+        for record in caplog.records
+        if record.name == "homeassistant.components.libresync"
+    ]
+    assert [record.getMessage() for record in records] == [
+        f"The hub at {HOST} is unavailable",
+        f"The hub at {HOST} is back online",
+    ]
+    assert {record.levelno for record in records} == {logging.INFO}
