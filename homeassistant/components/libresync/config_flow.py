@@ -20,6 +20,16 @@ from .const import DEFAULT_NAME, DOMAIN
 STEP_USER_SCHEMA = probatio.Schema({probatio.Required(CONF_HOST): TextSelector()})
 
 
+async def _async_identify(host: str) -> tuple[DiscoveredDevice | None, str | None]:
+    """Probe a hub by address, returning it or the error to show."""
+    device = await async_probe(host)
+    if device is None:
+        return None, "cannot_connect"
+    if not device.udn:
+        return device, "no_identity"
+    return device, None
+
+
 class LibreSyncConfigFlow(ConfigFlow, domain=DOMAIN):
     """Config flow for LibreSync. A hub is identified by its UPnP UDN."""
 
@@ -37,12 +47,11 @@ class LibreSyncConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             host = user_input[CONF_HOST]
-            device = await async_probe(host)
-            if device is None:
-                errors["base"] = "cannot_connect"
-            elif not device.udn:
-                errors["base"] = "no_identity"
+            device, error = await _async_identify(host)
+            if error is not None:
+                errors["base"] = error
             else:
+                assert device is not None and device.udn
                 await self.async_set_unique_id(device.udn, raise_on_progress=False)
                 self._abort_if_unique_id_configured(updates={CONF_HOST: host})
                 return self.async_create_entry(
@@ -50,6 +59,32 @@ class LibreSyncConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
         return self.async_show_form(
             step_id="user", data_schema=STEP_USER_SCHEMA, errors=errors
+        )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle a change of the hub's address."""
+        entry = self._get_reconfigure_entry()
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            host = user_input[CONF_HOST]
+            device, error = await _async_identify(host)
+            if error is not None:
+                errors["base"] = error
+            else:
+                assert device is not None and device.udn
+                await self.async_set_unique_id(device.udn)
+                self._abort_if_unique_id_mismatch()
+                return self.async_update_reload_and_abort(
+                    entry, data_updates={CONF_HOST: host}
+                )
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                STEP_USER_SCHEMA, user_input or entry.data
+            ),
+            errors=errors,
         )
 
     @override

@@ -277,3 +277,74 @@ async def test_ssdp_dropped_after_manual_add(hass: HomeAssistant) -> None:
     assert manual["type"] is FlowResultType.CREATE_ENTRY
     assert manual["result"].unique_id == UDN
     assert hass.config_entries.flow.async_progress() == []
+
+
+async def test_reconfigure(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_probe: AsyncMock
+) -> None:
+    """Test the address of a hub can be changed."""
+    mock_config_entry.add_to_hass(hass)
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+
+    mock_probe.return_value = replace(FOUND, host=NEW_HOST)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: NEW_HOST}
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert mock_config_entry.data == {CONF_HOST: NEW_HOST}
+    mock_probe.assert_awaited_once_with(NEW_HOST)
+
+
+@pytest.mark.parametrize(
+    ("found", "error"),
+    [
+        pytest.param(None, "cannot_connect", id="cannot_connect"),
+        pytest.param(DiscoveredDevice(host=HOST, udn=None), "no_identity", id="no_udn"),
+    ],
+)
+async def test_reconfigure_errors(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_probe: AsyncMock,
+    found: DiscoveredDevice | None,
+    error: str,
+) -> None:
+    """Test an address that does not answer as a hub, and the recovery."""
+    mock_config_entry.add_to_hass(hass)
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+
+    mock_probe.return_value = found
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: NEW_HOST}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": error}
+
+    mock_probe.return_value = replace(FOUND, host=NEW_HOST)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: NEW_HOST}
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert mock_config_entry.data == {CONF_HOST: NEW_HOST}
+
+
+async def test_reconfigure_another_hub(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_probe: AsyncMock
+) -> None:
+    """Test an address that answers as another hub is refused."""
+    mock_config_entry.add_to_hass(hass)
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+
+    mock_probe.return_value = replace(
+        FOUND, host=NEW_HOST, udn="uuid:00000000-0000-0000-0000-000000000000"
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: NEW_HOST}
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "unique_id_mismatch"
+    assert mock_config_entry.data == {CONF_HOST: HOST}
