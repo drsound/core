@@ -1,7 +1,7 @@
 """Tests for the LibreSync media player."""
 
 from datetime import timedelta
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from aiolibresync import (
     ConfirmationTimeout,
@@ -36,7 +36,7 @@ from homeassistant.components.media_player import (
     SERVICE_VOLUME_SET,
     MediaPlayerState,
 )
-from homeassistant.const import ATTR_ENTITY_ID, STATE_UNAVAILABLE
+from homeassistant.const import ATTR_ENTITY_ID, STATE_UNAVAILABLE, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
@@ -51,8 +51,9 @@ ENTITY_ID = "media_player.stereo"
 async def setup(
     hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_client: MagicMock
 ) -> None:
-    """Set up the integration."""
-    await setup_integration(hass, mock_config_entry)
+    """Set up the integration with the media player alone."""
+    with patch("homeassistant.components.libresync.PLATFORMS", [Platform.MEDIA_PLAYER]):
+        await setup_integration(hass, mock_config_entry)
 
 
 async def test_entities(

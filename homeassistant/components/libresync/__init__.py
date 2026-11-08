@@ -15,7 +15,10 @@ from .const import CONNECT_TIMEOUT, DOMAIN, MANUFACTURER
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.MEDIA_PLAYER]
+PLATFORMS: list[Platform] = [
+    Platform.BINARY_SENSOR,
+    Platform.MEDIA_PLAYER,
+]
 
 type LibreSyncConfigEntry = ConfigEntry[LibreSyncClient]
 

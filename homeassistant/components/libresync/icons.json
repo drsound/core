@@ -1,0 +1,12 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "audio": {
+        "default": "mdi:volume-high",
+        "state": {
+          "off": "mdi:volume-off"
+        }
+      }
+    }
+  }
+}

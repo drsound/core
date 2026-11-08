@@ -1,0 +1,52 @@
+# serializer version: 1
+# name: test_entities[binary_sensor.stereo_audio-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': None,
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <DeviceEntry identifiers=[('libresync', 'uuid:1a2b3c4d-5e6f-11f0-9193-0123456789ab')]>,
+    'disabled_by': None,
+    'domain': 'binary_sensor',
+    'entity_category': <EntityCategory.DIAGNOSTIC: 'diagnostic'>,
+    'entity_id': 'binary_sensor.stereo_audio',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'Audio',
+    'options': dict({
+    }),
+    'original_device_class': <BinarySensorDeviceClass.SOUND: 'sound'>,
+    'original_icon': None,
+    'original_name': 'Audio',
+    'platform': 'libresync',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'audio',
+    'unique_id': 'uuid:1a2b3c4d-5e6f-11f0-9193-0123456789ab_audio',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[binary_sensor.stereo_audio-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'sound',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Stereo Audio',
+    }),
+    'context': <ANY>,
+    'entity_id': 'binary_sensor.stereo_audio',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': 'off',
+  })
+# ---

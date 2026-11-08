@@ -121,7 +121,9 @@ class LibreSyncMediaPlayer(LibreSyncEntity, MediaPlayerEntity):
         if state.position_ms != received or playing != was_playing:
             self._take_position(state)
         self._written = state
-        super()._handle_state(state)
+        # Not through the base filter: a seek back to the written position is
+        # the same state, and still needs the new time.
+        self.async_write_ha_state()
 
     def _take_position(self, state: DeviceState) -> None:
         """Publish the position together with the time it was read.

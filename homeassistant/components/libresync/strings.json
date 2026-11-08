@@ -32,6 +32,11 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "audio": {
+        "name": "Audio"
+      }
+    },
     "media_player": {
       "hub": {
         "state_attributes": {
