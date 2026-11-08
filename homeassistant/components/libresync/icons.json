@@ -12,6 +12,14 @@
       "eq_preset": {
         "default": "mdi:equalizer"
       }
+    },
+    "switch": {
+      "manual_eq": {
+        "default": "mdi:tune-vertical"
+      },
+      "room_correction": {
+        "default": "mdi:home-sound-in"
+      }
     }
   }
 }

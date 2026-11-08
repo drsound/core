@@ -19,6 +19,7 @@ PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
     Platform.MEDIA_PLAYER,
     Platform.SELECT,
+    Platform.SWITCH,
 ]
 
 type LibreSyncConfigEntry = ConfigEntry[LibreSyncClient]

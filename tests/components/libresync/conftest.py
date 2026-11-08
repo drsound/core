@@ -35,6 +35,8 @@ STATE = DeviceState(
     ),
     play_state=PlayState.PAUSED,
     audio_state=PlayState.PAUSED,
+    room_correction=True,
+    manual_eq=False,
     eq_preset=2,
     model="Stereo Hub",
     serial=SERIAL,

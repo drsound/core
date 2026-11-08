@@ -68,6 +68,14 @@
           "3": "Preset 3"
         }
       }
+    },
+    "switch": {
+      "manual_eq": {
+        "name": "Manual EQ"
+      },
+      "room_correction": {
+        "name": "Room correction"
+      }
     }
   },
   "exceptions": {
