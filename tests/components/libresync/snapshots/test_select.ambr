@@ -1,0 +1,62 @@
+# serializer version: 1
+# name: test_entities[select.stereo_eq_preset-entry]
+  EntityRegistryEntrySnapshot({
+    'aliases': list([
+      None,
+    ]),
+    'area_id': None,
+    'capabilities': dict({
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        '1',
+        '2',
+        '3',
+      ]),
+    }),
+    'config_entry_id': <ANY>,
+    'config_subentry_id': None,
+    'device_class': None,
+    'device_id': <DeviceEntry identifiers=[('libresync', 'uuid:1a2b3c4d-5e6f-11f0-9193-0123456789ab')]>,
+    'disabled_by': None,
+    'domain': 'select',
+    'entity_category': <EntityCategory.CONFIG: 'config'>,
+    'entity_id': 'select.stereo_eq_preset',
+    'has_entity_name': True,
+    'hidden_by': None,
+    'icon': None,
+    'id': <ANY>,
+    'labels': set({
+    }),
+    'name': None,
+    'object_id_base': 'EQ preset',
+    'options': dict({
+    }),
+    'original_device_class': None,
+    'original_icon': None,
+    'original_name': 'EQ preset',
+    'platform': 'libresync',
+    'previous_unique_id': None,
+    'suggested_object_id': None,
+    'supported_features': 0,
+    'translation_key': 'eq_preset',
+    'unique_id': 'uuid:1a2b3c4d-5e6f-11f0-9193-0123456789ab_eq_preset',
+    'unit_of_measurement': None,
+  })
+# ---
+# name: test_entities[select.stereo_eq_preset-state]
+  StateSnapshot({
+    'attributes': ReadOnlyDict({
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Stereo EQ preset',
+      <SelectEntityCapabilityAttribute.OPTIONS: 'options'>: list([
+        '1',
+        '2',
+        '3',
+      ]),
+    }),
+    'context': <ANY>,
+    'entity_id': 'select.stereo_eq_preset',
+    'last_changed': <ANY>,
+    'last_reported': <ANY>,
+    'last_updated': <ANY>,
+    'state': '2',
+  })
+# ---

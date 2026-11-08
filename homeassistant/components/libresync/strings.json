@@ -58,6 +58,16 @@
           }
         }
       }
+    },
+    "select": {
+      "eq_preset": {
+        "name": "EQ preset",
+        "state": {
+          "1": "Preset 1",
+          "2": "Preset 2",
+          "3": "Preset 3"
+        }
+      }
     }
   },
   "exceptions": {
